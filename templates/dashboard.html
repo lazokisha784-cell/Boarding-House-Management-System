@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+{% block page_title %}Overview Dashboard{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('rooms') }}" class="btn btn-primary btn-sm">
+    <i class="fas fa-plus"></i> Add Room
+</a>
+<a href="{{ url_for('tenants') }}" class="btn btn-outline btn-sm">
+    <i class="fas fa-user-plus"></i> Add Tenant
+</a>
+{% endblock %}
+
+{% block content %}
+<!-- Metric Stat Cards -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-info">
+            <p>Total Rooms</p>
+            <div class="stat-value">{{ total_rooms|default(0) }}</div>
+            <div class="stat-subtext">{{ available_rooms|default(0) }} available for rent</div>
+        </div>
+        <div class="stat-icon primary">
+            <i class="fas fa-door-open"></i>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-info">
+            <p>Active Tenants</p>
+            <div class="stat-value">{{ active_tenants|default(0) }}</div>
+            <div class="stat-subtext">Currently boarding</div>
+        </div>
+        <div class="stat-icon info">
+            <i class="fas fa-users"></i>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-info">
+            <p>Occupancy Rate</p>
+            <div class="stat-value">{{ occupancy_rate|default(0) }}%</div>
+            <div class="stat-subtext">Based on total capacity</div>
+        </div>
+        <div class="stat-icon success">
+            <i class="fas fa-chart-pie"></i>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-info">
+            <p>Total Revenue</p>
+            <div class="stat-value">₱{{ "{:,.2f}".format(total_revenue|default(0)) }}</div>
+            <div class="stat-subtext">Recorded payments</div>
+        </div>
+        <div class="stat-icon warning">
+            <i class="fas fa-coins"></i>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
+    <!-- Quick Actions Card -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title"><i class="fas fa-bolt" style="color: var(--primary);"></i> Quick Operations</h2>
+        </div>
+        <p style="color: var(--text-secondary); margin-bottom: 1.25rem; font-size: 0.9rem;">
+            Quick shortcuts to frequently used boarding house management operations.
+        </p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
+            <a href="{{ url_for('rooms') }}" class="btn btn-outline" style="justify-content: flex-start; text-align: left;">
+                <i class="fas fa-door-closed" style="color: var(--primary);"></i> Manage Rooms
+            </a>
+            <a href="{{ url_for('tenants') }}" class="btn btn-outline" style="justify-content: flex-start; text-align: left;">
+                <i class="fas fa-user-friends" style="color: var(--secondary);"></i> Manage Tenants
+            </a>
+            <a href="{{ url_for('payments') }}" class="btn btn-outline" style="justify-content: flex-start; text-align: left;">
+                <i class="fas fa-money-bill-wave" style="color: var(--success);"></i> Collect Rent
+            </a>
+            <a href="{{ url_for('maintenance') }}" class="btn btn-outline" style="justify-content: flex-start; text-align: left;">
+                <i class="fas fa-wrench" style="color: var(--warning);"></i> Maintenance
+            </a>
+        </div>
+    </div>
+
+    <!-- System Status & Getting Started Card -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title"><i class="fas fa-info-circle" style="color: var(--info);"></i> System Status</h2>
+        </div>
+        <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+            Your Boarding House Management System is running smoothly on SQLite permanent database.
+        </p>
+        <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.65rem; font-size: 0.88rem; color: var(--text-secondary);">
+            <li style="display: flex; align-items: center; gap: 0.6rem;">
+                <i class="fas fa-check-circle" style="color: var(--success);"></i> Database Connection: <strong>Active (SQLite)</strong>
+            </li>
+            <li style="display: flex; align-items: center; gap: 0.6rem;">
+                <i class="fas fa-check-circle" style="color: var(--success);"></i> Admin Session: <strong>Authenticated</strong>
+            </li>
+            <li style="display: flex; align-items: center; gap: 0.6rem;">
+                <i class="fas fa-check-circle" style="color: var(--success);"></i> Git Version Control: <strong>Initialized</strong>
+            </li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

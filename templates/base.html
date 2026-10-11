@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dashboard{% endblock %} - Boarding House Management</title>
+    <!-- Google Fonts & Font Awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Main Style -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block styles %}{% endblock %}
+</head>
+<body>
+    <div class="app-wrapper">
+        <!-- Mobile Sidebar Overlay -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-brand-icon">
+                    <i class="fas fa-home"></i>
+                </div>
+                <div class="sidebar-brand-text">
+                    Stay<span>Care</span>
+                </div>
+            </div>
+
+            <ul class="sidebar-menu">
+                <li class="menu-category">Main Menu</li>
+                <li>
+                    <a href="{{ url_for('dashboard') }}" class="sidebar-link {% if active_page == 'dashboard' %}active{% endif %}">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('rooms') }}" class="sidebar-link {% if active_page == 'rooms' %}active{% endif %}">
+                        <i class="fas fa-door-open"></i>
+                        <span>Rooms</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('tenants') }}" class="sidebar-link {% if active_page == 'tenants' %}active{% endif %}">
+                        <i class="fas fa-users"></i>
+                        <span>Tenants</span>
+                    </a>
+                </li>
+
+                <li class="menu-category">Finance & Tasks</li>
+                <li>
+                    <a href="{{ url_for('payments') }}" class="sidebar-link {% if active_page == 'payments' %}active{% endif %}">
+                        <i class="fas fa-receipt"></i>
+                        <span>Rent Payments</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('maintenance') }}" class="sidebar-link {% if active_page == 'maintenance' %}active{% endif %}">
+                        <i class="fas fa-tools"></i>
+                        <span>Maintenance</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('reports') }}" class="sidebar-link {% if active_page == 'reports' %}active{% endif %}">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <span>Reports</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <div class="admin-card">
+                    <div class="admin-avatar">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <div class="admin-info">
+                        <div class="admin-name">{{ session.get('admin_name', 'Administrator') }}</div>
+                        <div class="admin-role">Super Admin</div>
+                    </div>
+                    <a href="{{ url_for('logout') }}" class="btn-logout" title="Log out" onclick="return confirm('Are you sure you want to log out?');">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <div class="main-wrapper">
+            <header class="topbar">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button class="mobile-toggle" id="mobileToggle" aria-label="Toggle navigation">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 class="topbar-title">{% block page_title %}Dashboard{% endblock %}</h1>
+                </div>
+
+                <div class="topbar-actions">
+                    {% block page_actions %}{% endblock %}
+                </div>
+            </header>
+
+            <main class="content-area">
+                <!-- Flash messages -->
+                <div class="alerts-container">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category if category != 'error' else 'danger' }}">
+                                    <span>
+                                        <i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' or category == 'danger' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+                                        &nbsp;{{ message }}
+                                    </span>
+                                    <button type="button" class="alert-close">&times;</button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                </div>
+
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <!-- Main JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
