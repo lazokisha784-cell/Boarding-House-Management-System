@@ -224,6 +224,12 @@ def create_app():
 
         return render_template('rooms/form.html', active_page='rooms', room=room)
 
+    @app.route('/rooms/view/<int:id>')
+    @login_required
+    def rooms_view(id):
+        room = Room.query.get_or_404(id)
+        return render_template('rooms/view.html', active_page='rooms', room=room)
+
     @app.route('/rooms/delete/<int:id>', methods=['POST'])
     @login_required
     def rooms_delete(id):
@@ -295,7 +301,7 @@ def create_app():
             
             # Check room capacity if a room was assigned
             if room_id and status == 'Active':
-                target_room = Room.query.get(room_id)
+                target_room = db.session.get(Room, room_id)
                 if target_room and target_room.is_full:
                     flash(f'Room "{target_room.room_number}" is currently full (Capacity: {target_room.capacity}). Please select another room.', 'error')
                     return render_template('tenants/form.html', active_page='tenants', tenant=None, rooms=available_rooms, today=manila_today().isoformat())
@@ -315,7 +321,7 @@ def create_app():
 
             # Update assigned room status
             if room_id:
-                target_room = Room.query.get(room_id)
+                target_room = db.session.get(Room, room_id)
                 if target_room:
                     target_room.update_occupancy_status()
                     db.session.commit()
@@ -361,7 +367,7 @@ def create_app():
 
             # If room changed and new room is selected, check capacity
             if new_room_id and new_room_id != old_room_id and status == 'Active':
-                target_room = Room.query.get(new_room_id)
+                target_room = db.session.get(Room, new_room_id)
                 if target_room and target_room.is_full:
                     flash(f'Room "{target_room.room_number}" is currently full. Please pick an available room.', 'error')
                     return render_template('tenants/form.html', active_page='tenants', tenant=tenant, rooms=available_rooms, today=manila_today().isoformat())
@@ -379,11 +385,11 @@ def create_app():
 
             # Update previous room & new room status
             if old_room_id:
-                old_room = Room.query.get(old_room_id)
+                old_room = db.session.get(Room, old_room_id)
                 if old_room:
                     old_room.update_occupancy_status()
             if new_room_id:
-                new_room = Room.query.get(new_room_id)
+                new_room = db.session.get(Room, new_room_id)
                 if new_room:
                     new_room.update_occupancy_status()
             db.session.commit()
@@ -404,7 +410,7 @@ def create_app():
         db.session.commit()
 
         if room_id:
-            room = Room.query.get(room_id)
+            room = db.session.get(Room, room_id)
             if room:
                 room.update_occupancy_status()
                 db.session.commit()
@@ -418,11 +424,15 @@ def create_app():
         tenant = Tenant.query.get_or_404(id)
         room_id = tenant.room_id
 
+        # Safely disassociate maintenance tickets
+        for req in tenant.maintenance_requests:
+            req.tenant_id = None
+
         db.session.delete(tenant)
         db.session.commit()
 
         if room_id:
-            room = Room.query.get(room_id)
+            room = db.session.get(Room, room_id)
             if room:
                 room.update_occupancy_status()
                 db.session.commit()
@@ -475,7 +485,7 @@ def create_app():
         default_amount = ''
 
         if selected_tenant_id and selected_tenant_id.isdigit():
-            t = Tenant.query.get(int(selected_tenant_id))
+            t = db.session.get(Tenant, int(selected_tenant_id))
             if t and t.room:
                 default_amount = f"{t.room.monthly_rent:.2f}"
 
@@ -538,6 +548,62 @@ def create_app():
     def payments_receipt(id):
         payment = Payment.query.get_or_404(id)
         return render_template('payments/receipt.html', active_page='payments', payment=payment)
+
+    @app.route('/payments/edit/<int:id>', methods=['GET', 'POST'])
+    @login_required
+    def payments_edit(id):
+        payment = Payment.query.get_or_404(id)
+        tenants = Tenant.query.order_by(Tenant.full_name.asc()).all()
+
+        if request.method == 'POST':
+            tenant_id_raw = request.form.get('tenant_id', '')
+            amount_raw = request.form.get('amount_paid', '0')
+            payment_date_str = request.form.get('payment_date', '')
+            due_date_str = request.form.get('due_date', '')
+            payment_method = request.form.get('payment_method', payment.payment_method)
+            status = request.form.get('status', payment.status)
+            reference_number = request.form.get('reference_number', '').strip() or None
+            notes = request.form.get('notes', '').strip() or None
+
+            if not tenant_id_raw or not tenant_id_raw.isdigit():
+                flash('Please select a valid tenant.', 'error')
+                return render_template('payments/form.html', active_page='payments', payment=payment, tenants=tenants, today=manila_today().isoformat())
+
+            try:
+                amount_paid = float(amount_raw)
+                if amount_paid <= 0:
+                    raise ValueError("Amount paid must be greater than zero.")
+            except ValueError as e:
+                flash(f'Invalid payment amount: {str(e)}', 'error')
+                return render_template('payments/form.html', active_page='payments', payment=payment, tenants=tenants, today=manila_today().isoformat())
+
+            try:
+                payment_date = datetime.strptime(payment_date_str, '%Y-%m-%d').date() if payment_date_str else payment.payment_date
+                due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date() if due_date_str else payment.due_date
+            except ValueError:
+                payment_date = payment.payment_date
+                due_date = payment.due_date
+
+            payment.tenant_id = int(tenant_id_raw)
+            payment.amount_paid = amount_paid
+            payment.payment_date = payment_date
+            payment.due_date = due_date
+            payment.payment_method = payment_method
+            payment.status = status
+            payment.reference_number = reference_number
+            payment.notes = notes
+
+            db.session.commit()
+            flash(f'Payment record #RCP-{payment.id:04d} updated successfully!', 'success')
+            return redirect(url_for('payments'))
+
+        return render_template(
+            'payments/form.html',
+            active_page='payments',
+            payment=payment,
+            tenants=tenants,
+            today=manila_today().isoformat()
+        )
 
     @app.route('/payments/delete/<int:id>', methods=['POST'])
     @login_required
@@ -638,6 +704,54 @@ def create_app():
             flash(f'Maintenance ticket updated to "{new_status}".', 'success')
 
         return redirect(url_for('maintenance'))
+
+    @app.route('/maintenance/edit/<int:id>', methods=['GET', 'POST'])
+    @login_required
+    def maintenance_edit(id):
+        req = MaintenanceRequest.query.get_or_404(id)
+        rooms = Room.query.order_by(Room.room_number.asc()).all()
+        tenants = Tenant.query.order_by(Tenant.full_name.asc()).all()
+
+        if request.method == 'POST':
+            room_id_raw = request.form.get('room_id', '')
+            tenant_id_raw = request.form.get('tenant_id', '')
+            title = request.form.get('title', '').strip()
+            description = request.form.get('description', '').strip()
+            priority = request.form.get('priority', req.priority)
+            status = request.form.get('status', req.status)
+            cost_raw = request.form.get('cost', '0')
+
+            if not room_id_raw or not room_id_raw.isdigit():
+                flash('Please select a valid room.', 'error')
+                return render_template('maintenance/form.html', active_page='maintenance', req=req, rooms=rooms, tenants=tenants)
+
+            if not title or not description:
+                flash('Title and detailed description are required.', 'error')
+                return render_template('maintenance/form.html', active_page='maintenance', req=req, rooms=rooms, tenants=tenants)
+
+            try:
+                cost = float(cost_raw) if cost_raw else 0.0
+            except ValueError:
+                cost = 0.0
+
+            req.room_id = int(room_id_raw)
+            req.tenant_id = int(tenant_id_raw) if tenant_id_raw and tenant_id_raw.isdigit() else None
+            req.title = title
+            req.description = description
+            req.priority = priority
+            req.cost = cost
+            if status != req.status:
+                req.status = status
+                if status == 'Resolved':
+                    req.resolved_date = manila_today()
+                else:
+                    req.resolved_date = None
+
+            db.session.commit()
+            flash(f'Maintenance ticket #{req.id} updated successfully.', 'success')
+            return redirect(url_for('maintenance'))
+
+        return render_template('maintenance/form.html', active_page='maintenance', req=req, rooms=rooms, tenants=tenants)
 
     @app.route('/maintenance/delete/<int:id>', methods=['POST'])
     @login_required

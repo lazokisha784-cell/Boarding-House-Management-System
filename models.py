@@ -51,7 +51,7 @@ class Room(db.Model):
 
     # Relationships
     tenants = db.relationship('Tenant', backref='room', lazy=True)
-    maintenance_requests = db.relationship('MaintenanceRequest', backref='room', lazy=True)
+    maintenance_requests = db.relationship('MaintenanceRequest', backref='room', lazy=True, cascade='all, delete-orphan')
 
     def __init__(self, room_number=None, capacity=1, monthly_rent=0.0, description=None, status='Available', **kwargs):
         super().__init__(**kwargs)

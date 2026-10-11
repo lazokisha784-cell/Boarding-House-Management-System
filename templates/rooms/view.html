@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+
+{% block title %}Room {{ room.room_number }} Details{% endblock %}
+{% block page_title %}Room {{ room.room_number }}{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('rooms_edit', id=room.id) }}" class="btn btn-outline btn-sm">
+    <i class="fas fa-edit"></i> Edit Room
+</a>
+{% if not room.is_full and room.status != 'Maintenance' %}
+<a href="{{ url_for('tenants_add') }}?room_id={{ room.id }}" class="btn btn-primary btn-sm">
+    <i class="fas fa-user-plus"></i> Assign Tenant
+</a>
+{% endif %}
+<a href="{{ url_for('rooms') }}" class="btn btn-outline btn-sm">
+    <i class="fas fa-arrow-left"></i> Back to Rooms
+</a>
+{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+    <!-- Room Information Card -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title"><i class="fas fa-door-open" style="color: var(--primary);"></i> Room Overview</h2>
+            {% if room.status == 'Available' %}
+                <span class="badge badge-success"><i class="fas fa-check-circle"></i> Available</span>
+            {% elif room.status == 'Occupied' %}
+                <span class="badge badge-info"><i class="fas fa-user-check"></i> Occupied</span>
+            {% elif room.status == 'Maintenance' %}
+                <span class="badge badge-warning"><i class="fas fa-tools"></i> Maintenance</span>
+            {% else %}
+                <span class="badge badge-secondary">{{ room.status }}</span>
+            {% endif %}
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 0.85rem; font-size: 0.92rem;">
+            <div>
+                <span style="color: var(--text-secondary); display: block; font-size: 0.8rem;">Room Number:</span>
+                <strong style="font-size: 1.25rem; color: var(--text-primary);">Room {{ room.room_number }}</strong>
+            </div>
+
+            <div>
+                <span style="color: var(--text-secondary); display: block; font-size: 0.8rem;">Monthly Rental Rate:</span>
+                <div style="font-size: 1.25rem; font-weight: 700; color: var(--primary);">
+                    ₱{{ "{:,.2f}".format(room.monthly_rent) }} / month
+                </div>
+            </div>
+
+            <div>
+                <span style="color: var(--text-secondary); display: block; font-size: 0.8rem;">Capacity & Occupancy:</span>
+                <div style="margin-top: 0.2rem; font-weight: 600;">
+                    {{ room.active_tenants_count }} / {{ room.capacity }} person(s) occupying
+                </div>
+                {% set occ_percent = (room.active_tenants_count / room.capacity * 100) if room.capacity > 0 else 0 %}
+                <div class="occupancy-bar" style="margin-top: 0.5rem;">
+                    <div class="occupancy-fill {% if room.is_full %}full{% endif %}" style="width: {{ occ_percent }}%;"></div>
+                </div>
+                <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; justify-content: space-between;">
+                    <span>{{ room.available_slots }} free slot{{ 's' if room.available_slots != 1 else '' }} remaining</span>
+                    <span>{{ occ_percent|round|int }}% occupied</span>
+                </div>
+            </div>
+
+            {% if room.description %}
+            <div style="background: #f8fafc; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 0.5rem;">
+                <span style="color: var(--text-secondary); display: block; font-size: 0.8rem;">Amenities & Description:</span>
+                <p style="font-size: 0.88rem; margin: 0; color: var(--text-primary);">{{ room.description }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Active Occupants in this Room -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title"><i class="fas fa-users" style="color: var(--secondary);"></i> Active Tenants ({{ room.active_tenants_count }})</h2>
+        </div>
+
+        {% if room.active_tenants %}
+        <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+            {% for t in room.active_tenants %}
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border-color);">
+                <div>
+                    <a href="{{ url_for('tenants_view', id=t.id) }}" style="font-weight: 700; color: var(--primary);">
+                        {{ t.full_name }}
+                    </a>
+                    <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                        <i class="fas fa-phone-alt"></i> {{ t.phone }} &bull; Since {{ t.move_in_date.strftime('%b %d, %Y') }}
+                    </div>
+                </div>
+                <div>
+                    <a href="{{ url_for('tenants_view', id=t.id) }}" class="btn btn-outline btn-sm">View</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding: 2rem 1rem;">
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 0.75rem;">No active tenants currently assigned to this room.</p>
+            {% if room.status != 'Maintenance' %}
+            <a href="{{ url_for('tenants_add') }}?room_id={{ room.id }}" class="btn btn-primary btn-sm">
+                <i class="fas fa-user-plus"></i> Assign Tenant to Room
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Maintenance History for this Room -->
+<div class="card" style="padding: 0; overflow: hidden; margin-bottom: 2rem;">
+    <div style="padding: 1.25rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color);">
+        <h3 class="card-title"><i class="fas fa-tools" style="color: var(--warning);"></i> Maintenance Tickets for Room {{ room.room_number }}</h3>
+        <a href="{{ url_for('maintenance_add') }}" class="btn btn-primary btn-sm">
+            <i class="fas fa-plus"></i> File Request
+        </a>
+    </div>
+
+    {% if room.maintenance_requests %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Issue Summary</th>
+                    <th>Reported Date</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Cost</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in room.maintenance_requests %}
+                <tr>
+                    <td><strong>{{ req.title }}</strong></td>
+                    <td>{{ req.reported_date.strftime('%b %d, %Y') }}</td>
+                    <td>
+                        {% if req.priority == 'Urgent' %}<span class="badge badge-danger">Urgent</span>
+                        {% elif req.priority == 'High' %}<span class="badge badge-danger">High</span>
+                        {% elif req.priority == 'Medium' %}<span class="badge badge-warning">Medium</span>
+                        {% else %}<span class="badge badge-secondary">Low</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if req.status == 'Resolved' %}<span class="badge badge-success">Resolved</span>
+                        {% elif req.status == 'In Progress' %}<span class="badge badge-info">In Progress</span>
+                        {% else %}<span class="badge badge-warning">Pending</span>{% endif %}
+                    </td>
+                    <td>{{ "₱{:,.2f}".format(req.cost) if req.cost > 0 else '--' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="padding: 2.5rem; text-align: center; color: var(--text-secondary); font-size: 0.9rem;">
+        No maintenance tickets recorded for this room.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

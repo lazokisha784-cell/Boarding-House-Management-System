@@ -108,6 +108,9 @@
                                 <option value="Resolved" {% if req.status == 'Resolved' %}selected{% endif %}>Resolved</option>
                             </select>
                         </form>
+                        <a href="{{ url_for('maintenance_edit', id=req.id) }}" class="btn btn-icon btn-sm" title="Edit Ticket" style="margin-left: 0.25rem;">
+                            <i class="fas fa-edit"></i>
+                        </a>
                         <form action="{{ url_for('maintenance_delete', id=req.id) }}" method="POST" style="display: inline; margin-left: 0.25rem;" onsubmit="return confirm('Delete this maintenance ticket?');">
                             <button type="submit" class="btn btn-icon danger btn-sm" title="Delete Ticket">
                                 <i class="fas fa-trash-alt"></i>
