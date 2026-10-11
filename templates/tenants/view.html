@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+
+{% block title %}Tenant: {{ tenant.full_name }}{% endblock %}
+{% block page_title %}Tenant Profile{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('payments_add') }}?tenant_id={{ tenant.id }}" class="btn btn-primary btn-sm">
+    <i class="fas fa-hand-holding-usd"></i> Collect Rent
+</a>
+<a href="{{ url_for('tenants_edit', id=tenant.id) }}" class="btn btn-outline btn-sm">
+    <i class="fas fa-edit"></i> Edit Profile
+</a>
+<a href="{{ url_for('tenants') }}" class="btn btn-outline btn-sm">
+    <i class="fas fa-arrow-left"></i> Back to Tenants
+</a>
+{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+    <!-- Profile Card -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title"><i class="fas fa-user" style="color: var(--primary);"></i> Personal Details</h2>
+            {% if tenant.status == 'Active' %}
+                <span class="badge badge-success"><i class="fas fa-check-circle"></i> Active Tenant</span>
+            {% else %}
+                <span class="badge badge-secondary"><i class="fas fa-sign-out-alt"></i> Moved Out</span>
+            {% endif %}
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 0.85rem; font-size: 0.92rem;">
+            <div>
+                <span style="color: var(--text-secondary); display: block; font-size: 0.8rem;">Full Name:</span>
+                <strong style="font-size: 1.15rem; color: var(--text-primary);">{{ tenant.full_name }}</strong>
+            </div>
+            <div>
+                <span style="color: var(--text-secondary); display: block; font-size: 0.8rem;">Phone Number:</span>
+                <strong><i class="fas fa-phone-alt" style="color: var(--secondary);"></i> {{ tenant.phone }}</strong>
+            </div>
+            {% if tenant.email %}
+            <div>
+                <span style="color: var(--text-secondary); display: block; font-size: 0.8rem;">Email Address:</span>
+                <span><i class="fas fa-envelope" style="color: var(--info);"></i> {{ tenant.email }}</span>
+            </div>
+            {% endif %}
+            {% if tenant.emergency_contact %}
+            <div>
+                <span style="color: var(--text-secondary); display: block; font-size: 0.8rem;">Emergency Contact:</span>
+                <span><i class="fas fa-shield-alt" style="color: var(--warning);"></i> {{ tenant.emergency_contact }}</span>
+            </div>
+            {% endif %}
+            <div>
+                <span style="color: var(--text-secondary); display: block; font-size: 0.8rem;">Move-in Date:</span>
+                <span><i class="fas fa-calendar-alt" style="color: var(--primary);"></i> {{ tenant.move_in_date.strftime('%B %d, %Y') if tenant.move_in_date else 'N/A' }}</span>
+            </div>
+            {% if tenant.notes %}
+            <div style="background: #f8fafc; padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                <span style="color: var(--text-secondary); display: block; font-size: 0.8rem;">Notes:</span>
+                <p style="font-size: 0.85rem; margin: 0;">{{ tenant.notes }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Assigned Room Card -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title"><i class="fas fa-door-open" style="color: var(--secondary);"></i> Room Assignment</h2>
+        </div>
+        {% if tenant.room %}
+            <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+                <div>
+                    <span style="color: var(--text-secondary); font-size: 0.8rem;">Assigned Room:</span>
+                    <h3 style="font-size: 1.35rem; color: var(--text-primary); margin-top: 0.2rem;">Room {{ tenant.room.room_number }}</h3>
+                </div>
+                <div>
+                    <span style="color: var(--text-secondary); font-size: 0.8rem;">Monthly Rental Rate:</span>
+                    <div style="font-size: 1.25rem; font-weight: 700; color: var(--primary);">
+                        ₱{{ "{:,.2f}".format(tenant.room.monthly_rent) }} / month
+                    </div>
+                </div>
+                <div>
+                    <span style="color: var(--text-secondary); font-size: 0.8rem;">Room Capacity & Occupancy:</span>
+                    <div style="margin-top: 0.25rem; font-size: 0.9rem;">
+                        {{ tenant.room.active_tenants_count }} / {{ tenant.room.capacity }} person(s) occupying
+                    </div>
+                </div>
+                {% if tenant.status == 'Active' %}
+                <div style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                    <form action="{{ url_for('tenants_checkout', id=tenant.id) }}" method="POST" onsubmit="return confirm('Check out this tenant? This will free their room slot and mark their status as Moved Out.');">
+                        <button type="submit" class="btn btn-outline btn-sm" style="color: var(--danger); border-color: #fca5a5;">
+                            <i class="fas fa-sign-out-alt"></i> Check Out Tenant (Free Room Slot)
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        {% else %}
+            <div class="empty-state" style="padding: 1.5rem;">
+                <p style="color: var(--text-secondary); font-size: 0.9rem;">This tenant does not currently have a room assigned.</p>
+                <a href="{{ url_for('tenants_edit', id=tenant.id) }}" class="btn btn-outline btn-sm" style="margin-top: 0.5rem;">Assign Room</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Rent Payment History Table -->
+<div class="card" style="padding: 0; overflow: hidden; margin-bottom: 2rem;">
+    <div style="padding: 1.25rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color);">
+        <h3 class="card-title"><i class="fas fa-receipt" style="color: var(--success);"></i> Payment History</h3>
+        <a href="{{ url_for('payments_add') }}?tenant_id={{ tenant.id }}" class="btn btn-primary btn-sm">
+            <i class="fas fa-plus"></i> Record Payment
+        </a>
+    </div>
+
+    {% if tenant.payments %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Receipt #</th>
+                    <th>Payment Date</th>
+                    <th>Due Date</th>
+                    <th>Amount Paid</th>
+                    <th>Method</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in tenant.payments|sort(attribute='payment_date', reverse=True) %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('payments_receipt', id=p.id) }}" style="font-weight: 600; color: var(--primary);">
+                            #RCP-{{ p.id }}
+                        </a>
+                    </td>
+                    <td>{{ p.payment_date.strftime('%b %d, %Y') }}</td>
+                    <td>{{ p.due_date.strftime('%b %d, %Y') }}</td>
+                    <td style="font-weight: 700; color: var(--success);">₱{{ "{:,.2f}".format(p.amount_paid) }}</td>
+                    <td>{{ p.payment_method }}</td>
+                    <td>
+                        {% if p.status == 'Paid' %}
+                            <span class="badge badge-success">Paid</span>
+                        {% elif p.status == 'Partial' %}
+                            <span class="badge badge-warning">Partial</span>
+                        {% else %}
+                            <span class="badge badge-danger">Overdue</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right;">
+                        <a href="{{ url_for('payments_receipt', id=p.id) }}" class="btn btn-outline btn-sm">
+                            <i class="fas fa-print"></i> Receipt
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="padding: 2.5rem; text-align: center; color: var(--text-secondary); font-size: 0.9rem;">
+        No payments recorded yet for this tenant.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

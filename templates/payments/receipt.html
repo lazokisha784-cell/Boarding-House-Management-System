@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}Official Receipt #RCP-{{ "%04d"|format(payment.id) }}{% endblock %}
+{% block page_title %}Official Payment Receipt{% endblock %}
+
+{% block page_actions %}
+<button onclick="window.print()" class="btn btn-primary btn-sm btn-print-hide">
+    <i class="fas fa-print"></i> Print Receipt
+</button>
+<a href="{{ url_for('payments') }}" class="btn btn-outline btn-sm btn-print-hide">
+    <i class="fas fa-arrow-left"></i> Back to Payments
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="receipt-card">
+    <div class="receipt-header">
+        <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary); letter-spacing: -0.02em;">
+            StayCare Boarding House
+        </div>
+        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">
+            Official Rent Payment Receipt
+        </p>
+        <div style="margin-top: 0.75rem; display: inline-block; background: #f1f5f9; padding: 0.35rem 0.85rem; border-radius: 999px; font-size: 0.82rem; font-weight: 700; color: #334155;">
+            RECEIPT #RCP-{{ "%04d"|format(payment.id) }}
+        </div>
+    </div>
+
+    <div class="receipt-row">
+        <span class="receipt-label">Date Issued:</span>
+        <span class="receipt-val">{{ payment.payment_date.strftime('%B %d, %Y') }}</span>
+    </div>
+
+    <div class="receipt-row">
+        <span class="receipt-label">Tenant Name:</span>
+        <span class="receipt-val">{{ payment.tenant.full_name }}</span>
+    </div>
+
+    <div class="receipt-row">
+        <span class="receipt-label">Room Number:</span>
+        <span class="receipt-val">
+            {% if payment.tenant.room %}
+                Room {{ payment.tenant.room.room_number }}
+            {% else %}
+                N/A
+            {% endif %}
+        </span>
+    </div>
+
+    <div class="receipt-row">
+        <span class="receipt-label">Rental Due Date:</span>
+        <span class="receipt-val">{{ payment.due_date.strftime('%B %d, %Y') }}</span>
+    </div>
+
+    <div class="receipt-row">
+        <span class="receipt-label">Payment Method:</span>
+        <span class="receipt-val">{{ payment.payment_method }}</span>
+    </div>
+
+    {% if payment.reference_number %}
+    <div class="receipt-row">
+        <span class="receipt-label">Transaction Reference:</span>
+        <span class="receipt-val">{{ payment.reference_number }}</span>
+    </div>
+    {% endif %}
+
+    <div class="receipt-row">
+        <span class="receipt-label">Payment Status:</span>
+        <span class="receipt-val">
+            {% if payment.status == 'Paid' %}
+                <span class="badge badge-success"><i class="fas fa-check-circle"></i> Fully Paid</span>
+            {% elif payment.status == 'Partial' %}
+                <span class="badge badge-warning"><i class="fas fa-clock"></i> Partial Payment</span>
+            {% else %}
+                <span class="badge badge-danger"><i class="fas fa-exclamation-circle"></i> Overdue</span>
+            {% endif %}
+        </span>
+    </div>
+
+    <div class="receipt-row" style="margin-top: 1rem; padding-top: 1rem; border-top: 2px solid var(--border-color); border-bottom: none;">
+        <span class="receipt-label" style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary);">Total Amount Paid:</span>
+        <span class="receipt-val" style="font-size: 1.35rem; font-weight: 800; color: var(--success);">
+            ₱{{ "{:,.2f}".format(payment.amount_paid) }}
+        </span>
+    </div>
+
+    {% if payment.notes %}
+    <div style="margin-top: 1.5rem; background: #f8fafc; padding: 0.85rem; border-radius: 8px; font-size: 0.85rem; color: var(--text-secondary); border: 1px dashed var(--border-color);">
+        <strong>Notes:</strong> {{ payment.notes }}
+    </div>
+    {% endif %}
+
+    <div style="margin-top: 2.5rem; text-align: center; border-top: 1px dashed var(--border-color); padding-top: 1.25rem;">
+        <div style="font-size: 0.85rem; color: var(--text-secondary);">Acknowledged and received by:</div>
+        <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-top: 0.25rem;">
+            {{ session.get('admin_name', 'Management Administrator') }}
+        </div>
+        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">
+            StayCare Management Office
+        </div>
+    </div>
+</div>
+{% endblock %}

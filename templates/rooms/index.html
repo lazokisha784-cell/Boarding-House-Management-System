@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block title %}Room Management{% endblock %}
+{% block page_title %}Room Management{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('rooms_add') }}" class="btn btn-primary btn-sm">
+    <i class="fas fa-plus"></i> Add New Room
+</a>
+{% endblock %}
+
+{% block content %}
+<!-- Filter & Search Toolbar -->
+<div class="card filter-bar">
+    <form method="GET" action="{{ url_for('rooms') }}" class="filter-group" style="width: 100%; justify-content: space-between;">
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; flex: 1;">
+            <input type="text" name="search" class="form-control" placeholder="Search room number..." value="{{ search|default('') }}" style="max-width: 260px;">
+            <select name="status" class="form-control" style="max-width: 180px;" onchange="this.form.submit()">
+                <option value="">All Statuses</option>
+                <option value="Available" {% if status_filter == 'Available' %}selected{% endif %}>Available</option>
+                <option value="Occupied" {% if status_filter == 'Occupied' %}selected{% endif %}>Occupied</option>
+                <option value="Maintenance" {% if status_filter == 'Maintenance' %}selected{% endif %}>Maintenance</option>
+            </select>
+            <button type="submit" class="btn btn-outline btn-sm">
+                <i class="fas fa-search"></i> Search
+            </button>
+            {% if search or status_filter %}
+                <a href="{{ url_for('rooms') }}" class="btn btn-outline btn-sm" title="Clear Filters">Clear</a>
+            {% endif %}
+        </div>
+        <div style="font-size: 0.88rem; color: var(--text-secondary); align-self: center;">
+            Showing <strong>{{ rooms|length }}</strong> room{{ 's' if rooms|length != 1 else '' }}
+        </div>
+    </form>
+</div>
+
+{% if rooms %}
+<div class="rooms-grid">
+    {% for room in rooms %}
+    <div class="room-card">
+        <div>
+            <div class="room-header">
+                <div class="room-number">
+                    <i class="fas fa-door-open" style="color: var(--primary); font-size: 1.1rem; margin-right: 0.35rem;"></i>
+                    Room {{ room.room_number }}
+                </div>
+                {% if room.status == 'Available' %}
+                    <span class="badge badge-success"><i class="fas fa-check-circle"></i> Available</span>
+                {% elif room.status == 'Occupied' %}
+                    <span class="badge badge-info"><i class="fas fa-user-check"></i> Occupied</span>
+                {% elif room.status == 'Maintenance' %}
+                    <span class="badge badge-warning"><i class="fas fa-tools"></i> Maintenance</span>
+                {% else %}
+                    <span class="badge badge-secondary">{{ room.status }}</span>
+                {% endif %}
+            </div>
+
+            <div class="room-price">
+                ₱{{ "{:,.2f}".format(room.monthly_rent) }} <span>/ month</span>
+            </div>
+
+            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                <strong>Capacity:</strong> {{ room.capacity }} person{{ 's' if room.capacity > 1 else '' }}
+                &bull; <strong>Current:</strong> {{ room.active_tenants_count }} boarding
+            </div>
+
+            <!-- Occupancy bar -->
+            {% set occ_percent = (room.active_tenants_count / room.capacity * 100) if room.capacity > 0 else 0 %}
+            <div class="occupancy-bar">
+                <div class="occupancy-fill {% if room.is_full %}full{% endif %}" style="width: {{ occ_percent }}%;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 1rem;">
+                <span>{{ room.available_slots }} slot{{ 's' if room.available_slots != 1 else '' }} free</span>
+                <span>{{ occ_percent|round|int }}% occupied</span>
+            </div>
+
+            {% if room.description %}
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.4;">
+                {{ room.description }}
+            </p>
+            {% endif %}
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 0.5rem;">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">
+                ID: #{{ room.id }}
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="{{ url_for('rooms_edit', id=room.id) }}" class="btn btn-outline btn-sm" title="Edit Room">
+                    <i class="fas fa-edit"></i> Edit
+                </a>
+                <form action="{{ url_for('rooms_delete', id=room.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete Room {{ room.room_number }}?');">
+                    <button type="submit" class="btn btn-icon danger btn-sm" title="Delete Room">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon"><i class="fas fa-door-closed"></i></div>
+    <h3 class="empty-title">No rooms found</h3>
+    <p class="empty-description">Get started by creating your first boarding house room with its capacity and monthly rent.</p>
+    <a href="{{ url_for('rooms_add') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add First Room
+    </a>
+</div>
+{% endif %}
+{% endblock %}

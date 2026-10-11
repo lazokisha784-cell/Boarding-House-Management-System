@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}Record Rent Payment{% endblock %}
+{% block page_title %}Record Rent Payment{% endblock %}
+
+{% block content %}
+<div class="card form-card">
+    <div class="card-header">
+        <h2 class="card-title">
+            <i class="fas fa-money-check-alt" style="color: var(--success);"></i>
+            Enter Payment Transaction
+        </h2>
+        <a href="{{ url_for('payments') }}" class="btn btn-outline btn-sm">
+            <i class="fas fa-arrow-left"></i> Back to Payments
+        </a>
+    </div>
+
+    <form method="POST">
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label" for="tenant_id">Select Tenant <span style="color: var(--danger);">*</span></label>
+                <select id="tenant_id" name="tenant_id" class="form-control" required onchange="handleTenantChange(this)">
+                    <option value="">-- Choose Tenant --</option>
+                    {% for tenant in tenants %}
+                        <option value="{{ tenant.id }}" 
+                            data-rent="{{ tenant.room.monthly_rent if tenant.room else 0 }}"
+                            {% if selected_tenant_id and selected_tenant_id|int == tenant.id %}selected{% endif %}>
+                            {{ tenant.full_name }} 
+                            {% if tenant.room %}(Room {{ tenant.room.room_number }} - ₱{{ "{:,.2f}".format(tenant.room.monthly_rent) }}/mo){% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="amount_paid">Amount Paid (₱) <span style="color: var(--danger);">*</span></label>
+                <input type="number" step="0.01" min="0" id="amount_paid" name="amount_paid" class="form-control" placeholder="e.g. 3500.00" value="{{ default_amount|default('') }}" required>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label" for="payment_date">Payment Date <span style="color: var(--danger);">*</span></label>
+                <input type="date" id="payment_date" name="payment_date" class="form-control" value="{{ today }}" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="due_date">Rent Due Date <span style="color: var(--danger);">*</span></label>
+                <input type="date" id="due_date" name="due_date" class="form-control" value="{{ today }}" required>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label" for="payment_method">Payment Method</label>
+                <select id="payment_method" name="payment_method" class="form-control">
+                    <option value="Cash">Cash</option>
+                    <option value="GCash">GCash</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="status">Payment Status</label>
+                <select id="status" name="status" class="form-control">
+                    <option value="Paid" selected>Paid (Full)</option>
+                    <option value="Partial">Partial</option>
+                    <option value="Overdue">Overdue / Unpaid</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="reference_number">Reference / Receipt Number</label>
+            <input type="text" id="reference_number" name="reference_number" class="form-control" placeholder="e.g. GCash Ref 100234589 or Bank Ref">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="notes">Notes</label>
+            <textarea id="notes" name="notes" class="form-control" placeholder="e.g. Rent for October 2026, includes water and electricity..."></textarea>
+        </div>
+
+        <div class="form-actions">
+            <a href="{{ url_for('payments') }}" class="btn btn-outline">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-check-circle"></i> Save Payment Record
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function handleTenantChange(selectElem) {
+    const selectedOption = selectElem.options[selectElem.selectedIndex];
+    const rent = selectedOption.getAttribute('data-rent');
+    const amountInput = document.getElementById('amount_paid');
+    if (rent && parseFloat(rent) > 0 && (!amountInput.value || parseFloat(amountInput.value) === 0)) {
+        amountInput.value = parseFloat(rent).toFixed(2);
+    }
+}
+</script>
+{% endblock %}

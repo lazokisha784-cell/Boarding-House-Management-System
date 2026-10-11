@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block title %}Maintenance Requests{% endblock %}
+{% block page_title %}Maintenance Requests{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('maintenance_add') }}" class="btn btn-primary btn-sm">
+    <i class="fas fa-plus"></i> New Request
+</a>
+{% endblock %}
+
+{% block content %}
+<!-- Search & Status Filter Toolbar -->
+<div class="card filter-bar">
+    <form method="GET" action="{{ url_for('maintenance') }}" class="filter-group" style="width: 100%; justify-content: space-between;">
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; flex: 1;">
+            <input type="text" name="search" class="form-control" placeholder="Search title or description..." value="{{ search|default('') }}" style="max-width: 260px;">
+            <select name="status" class="form-control" style="max-width: 170px;" onchange="this.form.submit()">
+                <option value="">All Statuses</option>
+                <option value="Pending" {% if status_filter == 'Pending' %}selected{% endif %}>Pending</option>
+                <option value="In Progress" {% if status_filter == 'In Progress' %}selected{% endif %}>In Progress</option>
+                <option value="Resolved" {% if status_filter == 'Resolved' %}selected{% endif %}>Resolved</option>
+            </select>
+            <button type="submit" class="btn btn-outline btn-sm">
+                <i class="fas fa-search"></i> Search
+            </button>
+            {% if search or status_filter %}
+                <a href="{{ url_for('maintenance') }}" class="btn btn-outline btn-sm">Clear</a>
+            {% endif %}
+        </div>
+        <div style="font-size: 0.88rem; color: var(--text-secondary); align-self: center;">
+            Total Requests: <strong>{{ requests|length }}</strong>
+        </div>
+    </form>
+</div>
+
+{% if requests %}
+<div class="card" style="padding: 0; overflow: hidden;">
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Ticket / Issue</th>
+                    <th>Room</th>
+                    <th>Reported By</th>
+                    <th>Priority</th>
+                    <th>Reported Date</th>
+                    <th>Status</th>
+                    <th>Cost</th>
+                    <th style="text-align: right;">Update Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in requests %}
+                <tr>
+                    <td>
+                        <strong style="color: var(--text-primary); display: block;">{{ req.title }}</strong>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            {{ req.description }}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge badge-secondary" style="font-weight: 600;">
+                            Room {{ req.room.room_number }}
+                        </span>
+                    </td>
+                    <td>
+                        {{ req.tenant.full_name if req.tenant else 'Management / Staff' }}
+                    </td>
+                    <td>
+                        {% if req.priority == 'Urgent' %}
+                            <span class="badge badge-danger"><i class="fas fa-fire"></i> Urgent</span>
+                        {% elif req.priority == 'High' %}
+                            <span class="badge badge-danger">High</span>
+                        {% elif req.priority == 'Medium' %}
+                            <span class="badge badge-warning">Medium</span>
+                        {% else %}
+                            <span class="badge badge-secondary">Low</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ req.reported_date.strftime('%b %d, %Y') }}</td>
+                    <td>
+                        {% if req.status == 'Resolved' %}
+                            <span class="badge badge-success"><i class="fas fa-check"></i> Resolved</span>
+                            {% if req.resolved_date %}
+                            <div style="font-size: 0.72rem; color: var(--text-muted);">
+                                on {{ req.resolved_date.strftime('%b %d') }}
+                            </div>
+                            {% endif %}
+                        {% elif req.status == 'In Progress' %}
+                            <span class="badge badge-info"><i class="fas fa-spinner fa-spin"></i> In Progress</span>
+                        {% else %}
+                            <span class="badge badge-warning"><i class="fas fa-clock"></i> Pending</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size: 0.88rem; font-weight: 600;">
+                        {% if req.cost > 0 %}
+                            ₱{{ "{:,.2f}".format(req.cost) }}
+                        {% else %}
+                            <span style="color: var(--text-muted); font-weight: 400;">--</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right;">
+                        <form action="{{ url_for('maintenance_update_status', id=req.id) }}" method="POST" style="display: inline-flex; align-items: center; gap: 0.35rem;">
+                            <select name="status" class="form-control" style="padding: 0.25rem 0.5rem; font-size: 0.78rem; width: auto;" onchange="this.form.submit()">
+                                <option value="Pending" {% if req.status == 'Pending' %}selected{% endif %}>Pending</option>
+                                <option value="In Progress" {% if req.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                                <option value="Resolved" {% if req.status == 'Resolved' %}selected{% endif %}>Resolved</option>
+                            </select>
+                        </form>
+                        <form action="{{ url_for('maintenance_delete', id=req.id) }}" method="POST" style="display: inline; margin-left: 0.25rem;" onsubmit="return confirm('Delete this maintenance ticket?');">
+                            <button type="submit" class="btn btn-icon danger btn-sm" title="Delete Ticket">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon"><i class="fas fa-tools"></i></div>
+    <h3 class="empty-title">No maintenance requests</h3>
+    <p class="empty-description">All rooms and facilities are running in tip-top shape. File a maintenance request whenever repairs or servicing are required.</p>
+    <a href="{{ url_for('maintenance_add') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> File New Request
+    </a>
+</div>
+{% endif %}
+{% endblock %}
