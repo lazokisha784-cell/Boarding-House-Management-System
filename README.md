@@ -70,18 +70,19 @@ Boarding House Management System/
     ├── dashboard.html         # Overview dashboard
     ├── rooms/
     │   ├── index.html         # Room catalog & occupancy cards
-    │   └── form.html          # Add / Edit room
+    │   ├── form.html          # Add / Edit room
+    │   └── view.html          # Room profile, active occupants & repair history
     ├── tenants/
     │   ├── index.html         # Tenant directory
     │   ├── form.html          # Register / Edit tenant
     │   └── view.html          # Tenant profile & payment history
     ├── payments/
     │   ├── index.html         # Payment logs & financial totals
-    │   ├── form.html          # Record payment
+    │   ├── form.html          # Record & edit payments
     │   └── receipt.html       # Official printable receipt
     ├── maintenance/
     │   ├── index.html         # Maintenance tickets & status update
-    │   └── form.html          # File repair request
+    │   └── form.html          # File & edit repair requests
     └── reports/
         └── index.html         # Printable management reports
 ```
@@ -90,24 +91,27 @@ Boarding House Management System/
 
 ## How to Run Locally
 
-### 1. Install Dependencies
-Open your terminal in the project directory and run:
+### 1. Install Dependencies (First time only)
+Open PowerShell or Command Prompt in the project folder and run:
 ```bash
-python -m pip install -r requirements.txt
+py -m pip install -r requirements.txt
 ```
+*(or `python -m pip install -r requirements.txt`)*
 
 ### 2. Start the Application
+Run:
 ```bash
-python app.py
+py app.py
 ```
+*(or `python app.py`)*
 
-### 3. Open in Browser
-Visit:
+### 3. Open in Your Web Browser
+Open your browser and navigate to:
 ```text
 http://127.0.0.1:5000
 ```
 
-### Default Admin Credentials
+### Default Administrator Credentials
 * **Username:** `admin`
 * **Password:** `admin123`
 
